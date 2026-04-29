@@ -17,18 +17,18 @@
         display: flex; align-items: center; justify-content: center;
     }
     
-    /* 圖片頁專用樣式 */
+    /* 圖片頁：淡入+縮放 */
     .page img{ 
         position: absolute; width: 100%; height: 100%; object-fit: cover; 
-        opacity: 0; transition: opacity 2s ease-in-out, transform 12s linear;
+        opacity: 0; transition: opacity 2.5s ease-in-out, transform 12s linear;
         transform: scale(1.05);
     }
     .page.active img{ opacity: 0.6; transform: scale(1.2); }
 
-    /* 文字頁專用樣式 */
+    /* 文字頁：延遲淡入 */
     .text-content{
         max-width: 85%; text-align: center; z-index: 1;
-        opacity: 0; transition: opacity 2s ease-in-out 0.3s;
+        opacity: 0; transition: opacity 2s ease-in-out 0.8s;
     }
     .page.active .text-content { opacity: 1; }
 
@@ -60,13 +60,15 @@
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     #music.playing { animation: rotate 6s linear infinite; opacity: 1; transform: translateX(-15px); }
 
-    /* 忍住按鈕 */
+    /* 忍住按鈕：初始隱藏，增加過渡 */
     .exit {
         position: fixed; bottom: 45px; left: 35px; z-index: 1000;
         color: #d4af37; font-size: 16px; text-decoration: none;
         letter-spacing: 2px; font-weight: 300; opacity: 0;
-        transition: opacity 1.5s ease;
+        transition: opacity 2s ease-in-out;
     }
+    /* 激活狀態下的透明度 */
+    .exit.show { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -123,23 +125,28 @@ data.forEach((item, i) => {
 // 初始化第一頁
 setTimeout(() => container.children[0].classList.add('active'), 100);
 
+let timer = null;
+
 container.onscroll = () => {
     const scrollPos = container.scrollTop;
     const height = window.innerHeight;
     const activeIndex = Math.round(scrollPos / height);
-    const totalPages = container.children.length;
-
+    
     // 更新激活狀態
     Array.from(container.children).forEach((p, idx) => {
         if(idx === activeIndex) p.classList.add('active');
         else p.classList.remove('active');
     });
 
-    // 忍住按鈕：後半段出現
-    if(activeIndex >= totalPages / 2) {
-        exitBtn.style.opacity = "0.7";
-    } else {
-        exitBtn.style.opacity = "0";
+    // 忍住按鈕邏輯：第7頁之後開始出現 (activeIndex >= 7)
+    // 每次滾動先消失，再隨文案一起浮現
+    exitBtn.classList.remove('show');
+    clearTimeout(timer);
+
+    if(activeIndex >= 7) {
+        timer = setTimeout(() => {
+            exitBtn.classList.add('show');
+        }, 1200); // 稍微比文案晚一點點出來，更有「重生」感
     }
 };
 
@@ -148,7 +155,7 @@ const btn = document.getElementById("music");
 
 const startAudio = () => {
     if(audio.paused) {
-        audio.play();
+        audio.play().catch(()=>{});
         btn.classList.add('playing');
         const tip = document.querySelector('.audio-tip');
         if(tip) tip.style.opacity = "0";
